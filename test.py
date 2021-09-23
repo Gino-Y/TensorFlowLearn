@@ -1,9 +1,10 @@
-from tensorflow import keras
-from tensorflow.keras import layers
+# from tensorflow import keras
+# from tensorflow.keras import layers
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-data = pd.read_csv('./PRSA_data_2010.1.1-2014.12.31.csv')
+data = pd.read_csv(r'./PRSA_data.csv')
 data.info()
+# print(pd.read_csv(open('PRSA_data.csv')))
