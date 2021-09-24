@@ -2,15 +2,15 @@
 import tensorflow as tf
 import numpy as np
 import pandas as pd
-import  copy
+import copy
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import os
 
 
-def read_process_data(csv='BTC-USDT_5m.csv', isca=True, look_back=10):
-    data = pd.read_csv('stocks/'+csv)
+def read_process_data(csv='600599.csv', isca=True, look_back=10):
+    data = pd.read_csv('stocks1/' + csv)
     data = data.drop(['date'], 1)
     data.astype('float32')
     data = data.values
@@ -30,21 +30,20 @@ def read_process_data(csv='BTC-USDT_5m.csv', isca=True, look_back=10):
     return data
 
 
-
 def hidden_layer(layer_input, output_depth, scope):
     input_depth = layer_input.shape[-1]
-    with tf.name_scope('hidden'+str(scope)):
+    with tf.name_scope('hidden' + str(scope)):
         w = tf.get_variable(initializer=tf.random_uniform_initializer(minval=-0.1, maxval=0.1),
                             shape=(input_depth, output_depth),
                             dtype=tf.float32,
-                            name='weights'+str(scope))
+                            name='weights' + str(scope))
         b = tf.get_variable(initializer=tf.zeros_initializer(),
                             shape=(output_depth),
                             dtype=tf.float32,
-                            name='bias'+str(scope))
+                            name='bias' + str(scope))
         net = tf.matmul(layer_input, w) + b
-        tf.summary.histogram('w'+str(scope), w)
-        tf.summary.histogram('b'+str(scope), b)
+        tf.summary.histogram('w' + str(scope), w)
+        tf.summary.histogram('b' + str(scope), b)
         return net
 
 
@@ -61,7 +60,7 @@ def dnn(x, output_depths, fncs):
 
 def train_moel(data, neurons, fncs, batch_size=16, epochs=1):
     with tf.name_scope('input_data'):
-        X = tf.placeholder(dtype=tf.float32, shape=[None, (data.shape[-1]-1)], name='X')
+        X = tf.placeholder(dtype=tf.float32, shape=[None, (data.shape[-1] - 1)], name='X')
         Y = tf.placeholder(dtype=tf.float32, shape=[1, 1], name='Y')
     out = dnn(X, neurons, fncs)
     out = tf.identity(out, name='out')
@@ -76,26 +75,26 @@ def train_moel(data, neurons, fncs, batch_size=16, epochs=1):
 
     sess.run(tf.global_variables_initializer())
     look_back = 10
-    losses =[]
+    losses = []
     saver = tf.train.Saver()
     sess.graph.finalize()
     for e in range(epochs):
-        for i in range(0, len(data)-look_back):
+        for i in range(0, len(data) - look_back):
             sess.run(opt,
-                     feed_dict={X: data[i:(i+look_back), 1:],
-                                Y: np.array(data[i:(i+look_back), 0][-1])
-                                .reshape(1, 1)})
+                     feed_dict={X: data[i:(i + look_back), 1:],
+                                Y: np.array(data[i:(i + look_back), 0][-1])
+                     .reshape(1, 1)})
             rs = sess.run(merged,
-                          feed_dict={X: data[i:(i+look_back), 1:],
-                                     Y: np.array(data[i:(i+look_back), 0][-1])
-                                     .reshape(1, 1)})
+                          feed_dict={X: data[i:(i + look_back), 1:],
+                                     Y: np.array(data[i:(i + look_back), 0][-1])
+                          .reshape(1, 1)})
             writer.add_summary(rs, i)
             if np.mod(i, 50) == 0:
                 losses.append(sess.run(loss,
-                         feed_dict={X: data[i:(i + look_back), 1:],
-                                    Y: np.array(data[i:(i + look_back), 0][-1])
-                                    .reshape(1, 1)}))
-                print('loss:'+str(losses[-1]))
+                                       feed_dict={X: data[i:(i + look_back), 1:],
+                                                  Y: np.array(data[i:(i + look_back), 0][-1])
+                                       .reshape(1, 1)}))
+                print('loss:' + str(losses[-1]))
         y_num = sess.run(out, feed_dict={X: data[:, 1:]})
     saver.save(sess, 'ckpt/stock.ckpt', global_step=epochs)
     sess.close()
@@ -138,15 +137,15 @@ def restore_train_model(data, epochs=1):
                     sess.run(opt,
                              feed_dict={X: data[i:(i + look_back), 1:],
                                         Y: np.array(data[i:(i + look_back), 0][-1])
-                                        .reshape(1, 1)})
-                    lossnum = sess.run(loss,
-                             feed_dict={X: data[i:(i + look_back), 1:],
-                                        Y: np.array(data[i:(i + look_back), 0][-1])
                              .reshape(1, 1)})
+                    lossnum = sess.run(loss,
+                                       feed_dict={X: data[i:(i + look_back), 1:],
+                                                  Y: np.array(data[i:(i + look_back), 0][-1])
+                                       .reshape(1, 1)})
                     if np.mod(i, 50) == 0:
                         losses.append(lossnum)
                         print(lossnum)
-            saver.save(sess, 'ckpt/stock.ckpt', global_step=epochs+1)
+            saver.save(sess, 'ckpt/stock.ckpt', global_step=epochs + 1)
             y_num = sess.run(out, feed_dict={X: data[:, 1:]})
     return y_num, losses
 
@@ -158,6 +157,8 @@ def main():
     y_pred, losses = train_moel(data, neurons, fncs)
     testN()
     pass
+
+
 def trainN():
     stocklist = [i for i in os.listdir('stocks') if i.endswith('csv') and i.startswith('6')]
     for i in stocklist:
@@ -165,28 +166,27 @@ def trainN():
         y_pred, losses = restore_train_model(test_data)
         plt.plot(test_data[0:, 0], label='real')
         plt.plot(y_pred, label='pred')
-        plt.title(i+'_stock data')
+        plt.title(i + '_stock data')
         plt.legend()
-        plt.savefig("pred-"+str(i)+".png")
+        plt.savefig("pred-" + str(i) + ".png")
         plt.clf()
         plt.plot(losses, label='loss')
         plt.title(i + 'loss')
         plt.legend()
-        plt.savefig("loss-" + str(i)+".png")
+        plt.savefig("loss-" + str(i) + ".png")
         plt.clf()
 
 
 def testN():
-    test_data = read_process_data('000538.csv')
+    test_data = read_process_data('601999.csv')
     y_test_pred = restore_test_model(test_data)
     plt.plot(test_data[0:, 0], label='real')
     plt.plot(y_test_pred, label='pred')
-    plt.title('000538_stock data')
+    plt.title('601999_stock data')
     plt.legend()
-    plt.savefig("test-000538.png")
+    plt.savefig("test-601999.png")
     plt.clf()
+
 
 if __name__ == '__main__':
     main()
-
-
